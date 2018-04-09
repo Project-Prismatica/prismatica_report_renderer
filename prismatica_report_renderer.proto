@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/Project-Prismatica/prismatica_report_renderer";
+package prismatica_report_renderer;
+
+message TemplateRegistrationRequest {
+    google.protobuf.Timestamp timestamp = 1;
+    string requestId = 2;
+    string template = 3;
+}
+
+message TemplateRegistrationResponse {
+    string requestId = 1;
+    string templateId = 2;
+}
+
+message RenderRequest {
+    google.protobuf.Timestamp timestamp = 1;
+    string requestId = 2;
+    string templateId = 3;
+    map<string, string> renderingVariables = 4;
+}
+
+message RenderResponse {
+    string requestId = 1;
+    string result = 2;
+}
+
+service PrismaticaReportRenderer {
+    rpc Render (RenderRequest) returns (RenderResponse) {}
+    rpc RegisterTemplate (TemplateRegistrationRequest) returns
+        (TemplateRegistrationResponse) {}
+}
