@@ -36,4 +36,8 @@ The variable provided was Something
 
 # XML Features
 
-The renderer features a number of 
+More documentation (here)[./blob/master/doc/xml.md]
+
+# MongoDB Queries
+
+More documentation (here)[./blob/master/doc/mongo.md]
