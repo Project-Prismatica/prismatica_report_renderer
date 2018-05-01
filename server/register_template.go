@@ -8,9 +8,12 @@ import (
 	context "golang.org/x/net/context"
 
 	"github.com/Project-Prismatica/prismatica_report_renderer"
+	"github.com/Project-Prismatica/prismatica_report_renderer/templating_engine"
 )
 
-func (s PrismaticaReportRendererServer) RegisterTemplate(ctx context.Context, r *prismatica_report_renderer.TemplateRegistrationRequest) (*prismatica_report_renderer.TemplateRegistrationResponse, error) {
+func (s PrismaticaReportRendererServer) RegisterTemplate(ctx context.Context,
+		r *prismatica_report_renderer.TemplateRegistrationRequest) (
+		*prismatica_report_renderer.TemplateRegistrationResponse, error) {
 
 	if r.RequestId == "" {
 		newId, err := s.newRequestId()
@@ -48,7 +51,7 @@ func (s PrismaticaReportRendererServer) RegisterTemplate(ctx context.Context, r 
 	logrus.WithFields(logrus.Fields{"newTemplateId": newTemplateId}).
 		Debug("generated new template Id")
 
-	templateToStore, templateCreationError := prismatica_report_renderer.
+	templateToStore, templateCreationError := templating_engine.
 		NewTemplate(r.Template)
 	if templateCreationError != nil {
 		logrus.WithFields(logrus.Fields{"requestId": r.RequestId,

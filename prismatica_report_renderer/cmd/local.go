@@ -3,7 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/Project-Prismatica/prismatica_report_renderer"
+	"github.com/Project-Prismatica/prismatica_report_renderer/templating_engine"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -147,8 +147,8 @@ func doLocalRender(cmd *cobra.Command, args []string) {
 		localRenderRuntimeParameters.renderContextVariables).
 		Debug("rendering")
 
-	renderEngine := prismatica_report_renderer.NewTemplateEngine()
-	template, templateCompilationError := prismatica_report_renderer.
+	renderEngine := templating_engine.NewTemplateEngine()
+	template, templateCompilationError := templating_engine.
 		NewTemplate(localRenderRuntimeParameters.inputTemplate)
 	if templateCompilationError != nil {
 		logrus.WithField("error", templateCompilationError).

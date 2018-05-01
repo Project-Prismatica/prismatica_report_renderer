@@ -1,9 +1,10 @@
-package prismatica_report_renderer
+package template_providers
 
 import (
 	"github.com/hashicorp/golang-lru"
-
 	"github.com/sirupsen/logrus"
+
+	"github.com/Project-Prismatica/prismatica_report_renderer/templating_engine"
 )
 
 const (
@@ -29,7 +30,7 @@ func NewInMemoryRenderTemplateProvider()(*InMemoryRenderTemplateProvider, error)
 }
 
 func (s InMemoryRenderTemplateProvider) ResolveTemplate(templateId string)(
-		foundTemplate *ReportTemplate, err error) {
+		foundTemplate *templating_engine.ReportTemplate, err error) {
 
 	logrus.WithFields(logrus.Fields{"templateId": templateId,
 		"provider": "inMemory"}).Debug("resolving template")
@@ -43,7 +44,7 @@ func (s InMemoryRenderTemplateProvider) ResolveTemplate(templateId string)(
 		return
 	}
 
-	foundTemplate = candidateTemplate.(*ReportTemplate)
+	foundTemplate = candidateTemplate.(*templating_engine.ReportTemplate)
 
 	logrus.WithFields(logrus.Fields{"templateId": templateId,
 		"provider": "inMemory"}).Debug("found")
@@ -51,10 +52,9 @@ func (s InMemoryRenderTemplateProvider) ResolveTemplate(templateId string)(
 	return
 }
 
-func (s *InMemoryRenderTemplateProvider) StoreTemplate(toStore *ReportTemplate)(
-		error) {
+func (s *InMemoryRenderTemplateProvider) StoreTemplate(
+		toStore *templating_engine.ReportTemplate)(error) {
 	s.storedTemplates.Add(toStore.Id, toStore)
-
 	return nil
 }
 

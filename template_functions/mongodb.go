@@ -4,18 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"net/url"
-
-	"github.com/globalsign/mgo"
 	"github.com/flosch/pongo2"
-	"github.com/globalsign/mgo/bson"
 	"github.com/sirupsen/logrus"
-)
 
-type mongoConnectionInformation struct {
-	originalUri, host, database string
-	authority *url.Userinfo
-}
+	"gopkg.in/mgo.v2/bson"
+
+	"github.com/Project-Prismatica/prismatica_report_renderer/util"
+)
 
 const (
 	mongodbFilterName = "mongo"
@@ -25,58 +20,16 @@ func init() {
 	pongo2.RegisterFilter(mongodbFilterName, mongodbFilterFunction)
 }
 
-func parseMongoUri(mongoUri string)(parsed mongoConnectionInformation,
-		err error) {
-
-	parsedUrl, urlError := url.Parse(mongoUri)
-	if urlError != nil {
-		logrus.WithField("mongoUri", mongoUri).
-			Warn("could not parse mongo URL")
-		err = errors.New("could not parse mongo URI")
-		return
-	}
-
-	if parsedUrl.Scheme != "mongo://" {
-		logrus.WithField("offendingScheme", parsedUrl.Scheme).Warn(
-			"unknown scheme provided in mongo URI")
-	}
-
-	parsed.database = parsedUrl.Path
-	if '/' == parsed.database[0] {
-		parsed.database = parsed.database[1:]
-	}
-
-	parsed.authority = parsedUrl.User
-	parsed.host = parsedUrl.Host
-	parsed.originalUri = mongoUri
-	return
-}
-
-func getMongoConnection(connectionInfo mongoConnectionInformation)(
-		session *mgo.Session, collection *mgo.Database, err error) {
-	mongoConnection, mongoConnectionError := mgo.Dial(connectionInfo.host)
-	if mongoConnectionError != nil {
-		logrus.WithField("error", mongoConnectionError).
-			Warn("could not connect to mongo in filter")
-		err = errors.New("could not connect to mongo")
-		return
-	}
-
-	session = mongoConnection
-	collection = session.DB(connectionInfo.database)
-	return
-}
-
 func mongodbFilterFunction(mongoQueryValue *pongo2.Value,
 		mongoConnectionInfoValue *pongo2.Value)(out *pongo2.Value,
 		err *pongo2.Error) {
 	logrus.WithFields(logrus.Fields{"mongoQuery": mongoQueryValue,
-		"mongoConnectionInformation": mongoConnectionInfoValue}).Debug(
+		"MongodbConnectionInformation": mongoConnectionInfoValue}).Debug(
 		"executing mongo query")
 
 	filterError := pongo2.Error{Sender: mongodbFilterName}
 
-	mongoConnectionInfo, connectionParseError := parseMongoUri(
+	mongoConnectionInfo, connectionParseError := util.ParseMongodbUri(
 		mongoConnectionInfoValue.String())
 	if connectionParseError != nil {
 		filterError.OrigError = connectionParseError
@@ -84,7 +37,7 @@ func mongodbFilterFunction(mongoQueryValue *pongo2.Value,
 		return
 	}
 
-	mongoSession, mongoDatabase, mongoConnectionError := getMongoConnection(
+	mongoSession, mongoDatabase, mongoConnectionError := util.GetMongodbConnection(
 		mongoConnectionInfo)
 	if mongoConnectionError != nil {
 		filterError.OrigError = mongoConnectionError

@@ -7,6 +7,7 @@ import (
 	"github.com/lileio/lile"
 	"github.com/lileio/lile/fromenv"
 	"github.com/lileio/pubsub"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
 
@@ -23,5 +24,5 @@ func main() {
 		Provider:    fromenv.PubSubProvider(),
 	})
 
-	cmd.Execute()
+	cmd.Execute(viper.GetViper())
 }
