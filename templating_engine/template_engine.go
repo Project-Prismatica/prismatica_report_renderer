@@ -1,20 +1,37 @@
-package prismatica_report_renderer
+package templating_engine
 
 import (
 	"errors"
 	"github.com/flosch/pongo2"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	_ "github.com/Project-Prismatica/prismatica_report_renderer/template_functions"
 	_ "github.com/flosch/pongo2-addons"
 )
 
-var (
-	ReportRenderingFilterFunctions []func()
-)
-
 type TemplatingEngine struct {
 }
+
+type ReportTemplate struct {
+	Id, Template         string
+	RenderEngineTemplate *pongo2.Template
+}
+
+type RenderTemplateProvider interface {
+	ResolveTemplate(templateId string)(foundTemplate *ReportTemplate, err error)
+	StoreTemplate(toStore *ReportTemplate)(err error)
+	Shutdown()
+	SupportsWrite()(bool)
+}
+
+type RenderTemplateProviderFactory func (*viper.Viper)(RenderTemplateProvider,
+	error)
+
+var (
+	RegisteredTemplateProviderFactories = make(
+		map[string]RenderTemplateProviderFactory)
+)
 
 func NewTemplateEngine() (engine *TemplatingEngine){
 	engine = new(TemplatingEngine)
@@ -22,7 +39,20 @@ func NewTemplateEngine() (engine *TemplatingEngine){
 	return
 }
 
-func NewTemplate(rawTemplate string) (tpl *ReportTemplate, err error) {
+func RegisterTemplateProvider(name string,
+		provider RenderTemplateProviderFactory) {
+	if oldProvider, inMap := RegisteredTemplateProviderFactories[name]; inMap {
+		logrus.WithFields(logrus.Fields{
+			"providerName": name,
+			"oldProvider": oldProvider,
+			"newProvider": provider,
+		}).Warn("overwriting registered template provider")
+	}
+	RegisteredTemplateProviderFactories[name] = provider
+}
+
+func NewTemplate(rawTemplate string) (tpl *ReportTemplate,
+		err error) {
 
 	compiledTemplate, contextCreationError := pongo2.FromString(rawTemplate)
 	if contextCreationError != nil {
@@ -37,7 +67,8 @@ func NewTemplate(rawTemplate string) (tpl *ReportTemplate, err error) {
 	return
 }
 
-func (s TemplatingEngine) Render (inputTemplate *ReportTemplate,
+func (s TemplatingEngine) Render (
+		inputTemplate *ReportTemplate,
 		contextVariables map[string]string) (result string, err error) {
 	templateContext := pongo2.Context{}
 	for k, v := range contextVariables {

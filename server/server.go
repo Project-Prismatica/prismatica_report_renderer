@@ -3,49 +3,75 @@ package server
 import (
 	"errors"
 	"github.com/satori/go.uuid"
+	"github.com/spf13/viper"
 	"reflect"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/Project-Prismatica/prismatica_report_renderer"
+	"github.com/Project-Prismatica/prismatica_report_renderer/templating_engine"
+
+	_ "github.com/Project-Prismatica/prismatica_report_renderer/template_providers"
 )
 
 type PrismaticaReportRendererServer struct {
 	prismatica_report_renderer.PrismaticaReportRendererServer
-	RenderTemplateProviders []prismatica_report_renderer.RenderTemplateProvider
-	TemplatingEngine prismatica_report_renderer.TemplatingEngine
+	RenderTemplateProviders []templating_engine.RenderTemplateProvider
+	TemplatingEngine        *templating_engine.TemplatingEngine
 }
 
 func NewReportRenderServerOrPanic() (PrismaticaReportRendererServer) {
 
-	inMemoryTemplateCache, err := prismatica_report_renderer.
+	/**
+	 *   This is currently commented out because there is not cache eviction
+	 * system in place.
+	 *
+	 *   Additionally, this should be moved to conform with the new template
+	 * provider registration
+	 *
+	inMemoryTemplateCache, err := template_providers.
 		NewInMemoryRenderTemplateProvider()
 
 	if err != nil {
 		logrus.Fatal("could not allocate in-memory cache")
 	}
+	*/
+
+	var registeredProviders []templating_engine.RenderTemplateProvider
+	for providerName, providerFactory := range
+			templating_engine.RegisteredTemplateProviderFactories {
+		newProvider, newProviderError := providerFactory(viper.GetViper())
+		if nil != newProviderError {
+			logrus.WithFields(logrus.Fields{
+				"name": providerName,
+				"error": newProviderError,
+			}).Warn("skipping template provider")
+			continue
+		}
+		registeredProviders = append(registeredProviders, newProvider)
+	}
 
 	createdServer := PrismaticaReportRendererServer{
-		RenderTemplateProviders: []prismatica_report_renderer.
-			RenderTemplateProvider {
-				inMemoryTemplateCache,
-		},
+		RenderTemplateProviders: registeredProviders,
+		TemplatingEngine: templating_engine.NewTemplateEngine(),
 	}
 
 	return createdServer
 }
 
 func (s PrismaticaReportRendererServer) resolveTemplate(templateId string)(
-		*prismatica_report_renderer.ReportTemplate, bool) {
-	logrus.WithFields(logrus.Fields{"templateId": templateId}).
-		Debug("resolving template with providers")
+		*templating_engine.ReportTemplate, bool) {
+	logrus.WithFields(logrus.Fields{
+		"providers": s.RenderTemplateProviders,
+		"templateId": templateId,
+	}).Debug("resolving template with providers")
 
 	for _, provider := range s.RenderTemplateProviders {
 		foundTemplate, err := provider.ResolveTemplate(templateId)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{"error": err,
 				"provider": provider, "templateId": templateId}).
-				Error("provider error resolving template, continuing")
+				Warn("provider error resolving template, continuing")
 			continue
 		}
 
@@ -55,12 +81,12 @@ func (s PrismaticaReportRendererServer) resolveTemplate(templateId string)(
 	}
 
 	logrus.WithFields(logrus.Fields{"templateId": templateId}).
-		Info("could not resolve template")
+		Error("could not resolve template")
 	return nil, false
 }
 
 func (s PrismaticaReportRendererServer) storeTemplate (
-		template *prismatica_report_renderer.ReportTemplate)(bool) {
+		template *templating_engine.ReportTemplate)(bool) {
 
 	everStoredSuccessfully := false
 
