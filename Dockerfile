@@ -3,7 +3,7 @@ WORKDIR /usr/local/go/src/github.com/Project-Prismatica/prismatica_report_render
 COPY . /usr/local/go/src/github.com/Project-Prismatica/prismatica_report_renderer
 RUN apk update && apk upgrade && \
     apk add --no-cache bash git openssh
-RUN go get ./...
+RUN go get -u ./...
 RUN go build -o build/prismatica_report_renderer ./prismatica_report_renderer
 
 
