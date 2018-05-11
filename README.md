@@ -41,10 +41,9 @@ While local rendering is useful for debugging, the power of the project is to
 run this as a gRPC-exposed service as described in
 ```/prismatica_report_renderer.proto``` to allow clients to leverage data stored
 in back-end mongo databases.
+
 [Prismatica Infrastructure](https://github.com/Project-Prismatica/prismatica-infrastructure)
 is the recommended method for running this as a service.
-
-To that end, use the 
 
 # XML Features
 
